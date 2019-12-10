@@ -40,34 +40,6 @@ slot_def = {
     '25': ['Friday', 5]
 }
 
-slot_hor = {
-    '1': ['Monday', 1],
-    '6': ['Monday', 2],
-    '11': ['Monday', 3],
-    '16': ['Monday', 4],
-    '21': ['Monday', 5],
-    '2': ['Tuesday', 1],
-    '7': ['Tuesday', 2],
-    '12': ['Tuesday', 3],
-    '17': ['Tuesday', 4],
-    '22': ['Tuesday', 5],
-    '3': ['Wednesday', 1],
-    '8': ['Wednesday', 2],
-    '13': ['Wednesday', 3],
-    '18': ['Wednesday', 4],
-    '23': ['Wednesday', 5],
-    '4': ['Thursday', 1],
-    '9': ['Thursday', 2],
-    '14': ['Thursday', 3],
-    '19': ['Thursday', 4],
-    '24': ['Thursday', 5],
-    '5': ['Friday', 1],
-    '10': ['Friday', 2],
-    '15': ['Friday', 3],
-    '20': ['Friday', 4],
-    '25': ['Friday', 5]
-}
-
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
     tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
@@ -75,26 +47,8 @@ def solve_timetable():
     time_table = timetable.Timetable(1)
     pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     can_solve_slot(time_table, pairs, 1)
-
-    for day, slots in time_table.schedule.items():
-        print(day)
-        for slot_name, slot_val in slots.items():
-            print(str(slot_name) + ': ' + slot_val[1].name)
-    print('----------------------------')
-    print(time_table.task1Checker(tutors, modules))
-
-def generate_module_tutor_pairs(time_table, modules, tutors):
-    """
-    Generate a valid list of module-tutor pairs. For a pair to be valid, the 
-    topics of a module must all be in a tutors expertise. 
-    """
-    pairs = []
-    for module in modules:
-        for tutor in tutors:
-            if set(module.topics).issubset(set(tutor.expertise)):
-                pairs.append([module, tutor])
-
-    return pairs
+    # print time table
+    print_timetable(time_table)
 
 def can_solve_slot(time_table, pairs, slot):
     """
@@ -111,9 +65,6 @@ def can_solve_slot(time_table, pairs, slot):
     day = slot_meta[0]
     time_slot = slot_meta[1]
 
-    # get a valid module-tutor pair and move onto the next slot.
-    # Need to choose from the pairs by some criteria
-    random.shuffle(pairs)
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
@@ -133,6 +84,9 @@ def can_assign_pair(time_table, day, pair):
     Check that the module-tutor pair given does not violate any of the 
     constraints.
     """
+    # check the modules subjects are a subset of the tutors expertise
+    # TODO: think about this and see if it would be better
+
     # check that the tutor is not already teaching a module on the given day.
     for slot in time_table.schedule[day].values():
         if slot[0] == pair[1]:
@@ -149,5 +103,41 @@ def can_assign_pair(time_table, day, pair):
         return False
 
     return True
+
+def get_mrv_slot(time_table):
+    """
+    Get the 
+    """
+    valid_slots = [x for x in range(1, 26)]
+    print(valid_slots)
+    # for day, slots in time_table.schedule.items():
+    #     print(day)
+    #     for slot_name, slot_val in slots.items():
+    #         print(str(slot_name) + ': ' + slot_val[1].name)
+
+"""
+Utitlity methods
+"""
+def generate_module_tutor_pairs(time_table, modules, tutors):
+    """
+    Generate a valid list of module-tutor pairs. For a pair to be valid, the 
+    topics of a module must all be in a tutors expertise. 
+    """
+    pairs = []
+    for module in modules:
+        for tutor in tutors:
+            if set(module.topics).issubset(set(tutor.expertise)):
+                pairs.append([module, tutor])
+
+    return pairs
+
+def print_timetable(time_table):
+    for day, slots in time_table.schedule.items():
+        print(day)
+        for slot_name, slot_val in slots.items():
+            print(str(slot_name) + ': ' + slot_val[1].name)
+    print('----------------------------')
+    print('Table valid: ' + str(time_table.task1Checker(tutors, modules)))
+
 
 solve_timetable()
