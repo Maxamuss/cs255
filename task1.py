@@ -12,34 +12,6 @@ import math
 """
 Core methods for the CSP backtracking.
 """
-slot_def = {
-    '1': ['Monday', 1],
-    '2': ['Monday', 2],
-    '3': ['Monday', 3],
-    '4': ['Monday', 4],
-    '5': ['Monday', 5],
-    '6': ['Tuesday', 1],
-    '7': ['Tuesday', 2],
-    '8': ['Tuesday', 3],
-    '9': ['Tuesday', 4],
-    '10': ['Tuesday', 5],
-    '11': ['Wednesday', 1],
-    '12': ['Wednesday', 2],
-    '13': ['Wednesday', 3],
-    '14': ['Wednesday', 4],
-    '15': ['Wednesday', 5],
-    '16': ['Thursday', 1],
-    '17': ['Thursday', 2],
-    '18': ['Thursday', 3],
-    '19': ['Thursday', 4],
-    '20': ['Thursday', 5],
-    '21': ['Friday', 1],
-    '22': ['Friday', 2],
-    '23': ['Friday', 3],
-    '24': ['Friday', 4],
-    '25': ['Friday', 5]
-}
-
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
     tutors, modules = rw.readRequirements("ExampleProblems/Problem5.txt")
@@ -75,9 +47,7 @@ def can_solve_slot(time_table, pairs, slot):
         return True
 
     # get this version of the backtrackings slot info.
-    slot_meta = slot_def[str(slot)]
-    day = slot_meta[0]
-    time_slot = slot_meta[1]
+    day, time_slot = minimum_remaining_value(slot)
 
     random.shuffle(pairs)
     # sorted(pairs, key=lambda x: calc_lcv(x))
@@ -117,6 +87,46 @@ def can_assign_pair(time_table, day, pair):
 
     # passed all tests, pair is valid.
     return True
+
+def minimum_remaining_value(slot):
+    """
+    This method chooses the variable with the fewest remaining values. It is 
+    effectively starting a Monday slot 1 then slot 2 ... slot 5 then going to 
+    Tuesday slot 1 and repeating until Friday slot 5. It does this as the way to
+    reduce the domain is by selecting a slot in the same day as the one just 
+    selected as we can remove tutors and modules.
+    """
+    time_table_slots = {
+        '1': ['Monday', 1],
+        '2': ['Monday', 2],
+        '3': ['Monday', 3],
+        '4': ['Monday', 4],
+        '5': ['Monday', 5],
+        '6': ['Tuesday', 1],
+        '7': ['Tuesday', 2],
+        '8': ['Tuesday', 3],
+        '9': ['Tuesday', 4],
+        '10': ['Tuesday', 5],
+        '11': ['Wednesday', 1],
+        '12': ['Wednesday', 2],
+        '13': ['Wednesday', 3],
+        '14': ['Wednesday', 4],
+        '15': ['Wednesday', 5],
+        '16': ['Thursday', 1],
+        '17': ['Thursday', 2],
+        '18': ['Thursday', 3],
+        '19': ['Thursday', 4],
+        '20': ['Thursday', 5],
+        '21': ['Friday', 1],
+        '22': ['Friday', 2],
+        '23': ['Friday', 3],
+        '24': ['Friday', 4],
+        '25': ['Friday', 5]
+    }
+    slot_meta = time_table_slots[str(slot)]
+    day = slot_meta[0]
+    time_slot = slot_meta[1]
+    return day, time_slot
 
 def forward_checking(pair, pairs, slot):
     """
