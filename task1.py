@@ -10,11 +10,22 @@ import random
 import math
 
 """
+Methods for testing.
+"""
+def solve_timetable_test(file_name):
+    rw = ReaderWriter.ReaderWriter()
+    tutors, modules = rw.readRequirements(file_name)
+    time_table = timetable.Timetable(1)
+    module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
+    can_solve_slot(time_table, module_tutor_pairs, 1)
+    print(file_name + ': ' + str(time_table.task1Checker(tutors, modules)))
+
+"""
 Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem9.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -48,19 +59,18 @@ def can_solve_slot(time_table, pairs, slot):
 
     day, time_slot = minimum_remaining_value(slot)
 
-    # sort the pairs by the number of least constraining values
-    pairs = sorted(pairs, key=lambda x: least_constraining_value(x, pairs, slot), reverse=True)
+    # sort the pairs by their number of least constraining values
+    pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
-            pruned_pairs = forward_checking(pair, pairs, slot)
-            # move onto the next slot, calling recursively.
+            pruned_pairs = forward_checking(pair, pairs)
+
             if can_solve_slot(time_table, pruned_pairs, slot + 1):
                 return True
-            # may not be needed for this traversal method.
-            del time_table.schedule[day][time_slot]
 
+            del time_table.schedule[day][time_slot]
     # no solution.
     return False
 
@@ -122,55 +132,25 @@ def minimum_remaining_value(slot):
         '24': ['Friday', 4],
         '25': ['Friday', 5]
     }
-    slot_meta = time_table_slots[str(slot)]
-    day = slot_meta[0]
-    time_slot = slot_meta[1]
-    return day, time_slot
+    slot_meta = time_table_slots[str(slot)] 
+    return slot_meta[0], slot_meta[1]
 
-def least_constraining_value(pair, pairs, slot):
+def constraining_values(pair, pairs):
     """
     This method returns the number of values left in the domain if the given
     pair was choosen.
     """
-    remaining_domain_size = len(forward_checking(pair, pairs, slot))
+    remaining_domain = forward_checking(pair, pairs)
+    remaining_domain_size = len(remaining_domain) if remaining_domain is not None else 0
     return remaining_domain_size
 
-def forward_checking(pair, pairs, slot):
+def forward_checking(pair, pairs):
     """
-    Apply forward checking to the given pairs to reduce the domain. This is done 
-    in two ways: the first is removing all domain elements with the module that
-    was just selected. The second is to remove elements from the domain with the 
-    tutor just selected UNLESS it is slot 5. This is because our MRV approach 
-    means that we first start will slot 1 of a day and go down the slots to slot 
-    5. A tutor cannot teach twice a day so if they have just been assigned, so 
-    they are removed from the domain but only if it is not slot 5. 
-    Finally, we check that the number of modules in the domain is equal to the 
-    number of slots left since if it is not, then we cannot fill the time table
-    with the given domain. Return an empty list if this is the case.
+    Apply forward checking to the given pairs to reduce the domain. by removing 
+    all domain elements with the same module that was just selected. 
     """
-    # removing module from domain.
     pruned_pairs = [x for x in pairs if x[0] != pair[0]]
-    # removing tutor from domain if slot 5 of day.
-    if slot % 5 != 0:
-        pruned_pairs = [x for x in pruned_pairs if x[1] != pair[1]]
-    # check the number of modules
-    module_count = len(set([x[0] for x in pruned_pairs]))
-    if module_count < 25 - slot:
-        return []
-
     return pruned_pairs
-
-def calc_lcv(pair):
-    """
-    Return the number of valid
-    """
-    return 1
-    valid_slots = [x for x in range(1, 26)]
-    print(valid_slots)
-    # for day, slots in time_table.schedule.items():
-    #     print(day)
-    #     for slot_name, slot_val in slots.items():
-    #         print(str(slot_name) + ': ' + slot_val[1].name)
 
 """
 Utitlity methods
