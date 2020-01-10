@@ -42,9 +42,9 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
     pairs = []
     for module in modules:
         for tutor in tutors:
-            if set(module.topics).issubset(set(tutor.expertise)):
+            if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
-
+                # if set(module.topics).issubset(set(tutor.expertise)):
     return pairs
 
 def can_solve_slot(time_table, pairs, slot):
