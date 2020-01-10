@@ -139,8 +139,7 @@ def constraining_values(pair, pairs):
     This method returns the number of values left in the domain if the given
     pair was choosen.
     """
-    remaining_domain = forward_checking(pair, pairs)
-    remaining_domain_size = len(remaining_domain) if remaining_domain is not None else 0
+    remaining_domain_size = len(forward_checking(pair, pairs))
     return remaining_domain_size
 
 def forward_checking(pair, pairs):
