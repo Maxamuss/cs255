@@ -14,7 +14,7 @@ Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem5.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem9.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -46,11 +46,10 @@ def can_solve_slot(time_table, pairs, slot):
     if slot == 26:
         return True
 
-    # get this version of the backtrackings slot info.
     day, time_slot = minimum_remaining_value(slot)
 
-    random.shuffle(pairs)
-    # sorted(pairs, key=lambda x: calc_lcv(x))
+    # sort the pairs by the number of least constraining values
+    pairs = sorted(pairs, key=lambda x: least_constraining_value(x, pairs, slot), reverse=True)
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
@@ -127,6 +126,14 @@ def minimum_remaining_value(slot):
     day = slot_meta[0]
     time_slot = slot_meta[1]
     return day, time_slot
+
+def least_constraining_value(pair, pairs, slot):
+    """
+    This method returns the number of values left in the domain if the given
+    pair was choosen.
+    """
+    remaining_domain_size = len(forward_checking(pair, pairs, slot))
+    return remaining_domain_size
 
 def forward_checking(pair, pairs, slot):
     """

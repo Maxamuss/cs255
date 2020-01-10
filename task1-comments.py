@@ -70,7 +70,7 @@ slot_hor = {
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem3.txt")
     # attempt to solve the task
     time_table = timetable.Timetable(1)
     pairs = generate_module_tutor_pairs(time_table, modules, tutors)
