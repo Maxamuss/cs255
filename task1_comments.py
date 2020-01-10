@@ -62,7 +62,6 @@ def can_solve_slot(time_table, pairs, slot):
     # sort the pairs by the number of least constraining values
     pairs = sorted(pairs, key=lambda x: least_constraining_value(x, pairs, slot), reverse=True)
     print([x[1].name for x in pairs[:5]])
-    # random.shuffle(pairs)
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
@@ -71,9 +70,6 @@ def can_solve_slot(time_table, pairs, slot):
             print(least_constraining_value(pair, pairs, slot))
             
             pairs_pruned = forward_checking(pair, pairs, slot)
-            if pairs_pruned is None:
-                del time_table.schedule[day][time_slot]
-                return False
 
             a = []
             for mod in pairs_pruned:
@@ -86,7 +82,6 @@ def can_solve_slot(time_table, pairs, slot):
                 return True
             else:
                 print('\nslot: ' + str(slot))
-            # may not be needed for this traversal method.
             print('Deleteing ' + pair[0].name)
             del time_table.schedule[day][time_slot]
         else:
@@ -203,6 +198,7 @@ def print_timetable(time_table, tutors, modules):
         for slot_name, slot_val in slots.items():
             print(str(slot_name) + ': ' + slot_val[1].name)
     print('----------------------------')
+    print(type(time_table.schedule['Monday'][1]))
     print('Table valid status: ' + str(time_table.task1Checker(tutors, modules)))
 
 

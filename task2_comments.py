@@ -18,7 +18,7 @@ def solve_timetable_test(file_name):
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     can_solve_slot(time_table, module_tutor_pairs, 1)
-    print(file_name + ': ' + str(time_table.scheduleChecker(tutors, modules)))
+    print(file_name + ': ' + str(time_table.task1Checker(tutors, modules)))
 
 """
 Core methods for the CSP backtracking.
@@ -59,23 +59,38 @@ def can_solve_slot(time_table, pairs, slot):
     starting on Monday, time slot 1. When time slot 5 is populated, move to the 
     next day, time slot 1.
     """
+    print('\nslot: ' + str(slot))
     # check if all slots have been filled.
     if slot == 51:
         return True
 
     day, time_slot = minimum_remaining_value(slot)
     # sort the pairs by their number of least constraining values. If there is a
-    # tie-break, lab sessions come before modules as they have less constraints.
+    # tie-break, lab sessions come before modules as they have less constraint.
     pairs = sorted(pairs, key=lambda x: (constraining_values(x, pairs), x.is_lab), reverse=True)
+    print([x for x in pairs[:5]])
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type())
+            print(time_slot)
+            print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type())
+            
             pruned_pairs = forward_checking(pair, pairs)
+
+            a = []
+            for mod in pruned_pairs:
+                a.append(mod.module)
+            print('modules left: ' +  str(len(set(a))))
+            print('pairs left: ' + str(len(pruned_pairs)))
+
 
             if can_solve_slot(time_table, pruned_pairs, slot + 1):
                 return True
+            else:
+                print('\nslot: ' + str(slot))
 
+            print('Deleteing ' + pair.module.name)
             del time_table.schedule[day][time_slot]
     # no solution.
     return False
@@ -164,7 +179,7 @@ class ModuleTutorPair:
         return 'module'
 
     def __str__(self):
-        return '(' + self.module.name + ', ' + self.tutor[0].name + ', ' + self.session_type() + ')' 
+        return '(' + self.module.name + ', ' + self.tutor.name + ', ' + self.session_type() + ')' 
 
     def __repr__(self):
         return str(self)
