@@ -1,5 +1,5 @@
 """
-Methods used in task 1. This is used for testing of methods and ideas. My final 
+Methods used in task 2. This is used for testing of methods and ideas. My final 
 working solution will be added to the scheduler.py file.
 """
 import module
@@ -42,27 +42,12 @@ slot_def = {
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem5.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem2.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print_timetable(time_table, tutors, modules)
-
-def generate_module_tutor_pairs(time_table, modules, tutors):
-    """
-    Generate a valid list of module-tutor pairs. For a pair to be valid, the 
-    topics of a module must all be in a tutors expertise. This is the as doing it
-    in the can_assign_pair method but I do here to reduce the domain before we 
-    start the backtracking.
-    """
-    pairs = []
-    for module in modules:
-        for tutor in tutors:
-            if set(module.topics).issubset(set(tutor.expertise)):
-                pairs.append([module, tutor])
-
-    return pairs
 
 def can_solve_slot(time_table, pairs, slot):
     """
@@ -85,9 +70,13 @@ def can_solve_slot(time_table, pairs, slot):
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
-            pruned_pairs = forward_checking(pair, pairs, slot)
+            # Remove module from the pairs list so it can't get chosen again.
+            # pruned_pairs = forward_checking(pair, pairs, slot)
+            pairs_removed = [x for x in pairs if x[0] != pair[0]]
+            print(slot[1])
+            next_slot = slot + 1
             # move onto the next slot, calling recursively.
-            if can_solve_slot(time_table, pruned_pairs, slot + 1):
+            if can_solve_slot(time_table, pruned_pairs, next_slot):
                 return True
             # may not be needed for this traversal method.
             del time_table.schedule[day][time_slot]
@@ -126,20 +115,13 @@ def forward_checking(pair, pairs, slot):
     tutor just selected UNLESS it is slot 5. This is because our MRV approach 
     means that we first start will slot 1 of a day and go down the slots to slot 
     5. A tutor cannot teach twice a day so if they have just been assigned, so 
-    they are removed from the domain but only if it is not slot 5. 
-    Finally, we check that the number of modules in the domain is equal to the 
-    number of slots left since if it is not, then we cannot fill the time table
-    with the given domain. Return an empty list if this is the case.
+    they are removed from the domain but only if it is not slot 5
     """
     # removing module from domain.
     pruned_pairs = [x for x in pairs if x[0] != pair[0]]
     # removing tutor from domain if slot 5 of day.
     if slot % 5 != 0:
-        pruned_pairs = [x for x in pruned_pairs if x[1] != pair[1]]
-    # check the number of modules
-    module_count = len(set([x[0] for x in pruned_pairs]))
-    if module_count < 25 - slot:
-        return []
+        pruned_pairs = [x for x in pairs if x[1] != pair[1]]
 
     return pruned_pairs
 
@@ -158,6 +140,19 @@ def calc_lcv(pair):
 """
 Utitlity methods
 """
+def generate_module_tutor_pairs(time_table, modules, tutors):
+    """
+    Generate a valid list of module-tutor pairs. For a pair to be valid, the 
+    topics of a module must all be in a tutors expertise. 
+    """
+    pairs = []
+    for module in modules:
+        for tutor in tutors:
+            if set(module.topics).issubset(set(tutor.expertise)):
+                pairs.append([module, tutor])
+
+    return pairs
+
 def print_timetable(time_table, tutors, modules):
     """
     Print the time table as well as showing if the solution found is valid.

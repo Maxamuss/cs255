@@ -114,23 +114,27 @@ def can_solve_slot(time_table, pairs, slot):
 
     # get a valid module-tutor pair and move onto the next slot.
     # Need to choose from the pairs by some criteria
-    random.shuffle(pairs)
+    # random.shuffle(pairs)
+
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
             print('Assigned ' + pair[0].name + ' : ' + pair[1].name)
             # Remove module from the pairs list so it can't get chosen again.
-            pairs_removed = [x for x in pairs if x[0] != pair[0]]
+            pairs_pruned = forward_checking(pair, pairs, slot)
+            if pairs_pruned == []:
+                del time_table.schedule[day][time_slot]
+                continue
 
             a = []
-            for mod in pairs_removed:
+            for mod in pairs_pruned:
                 a.append(mod[0])
             print('modules left: ' +  str(len(set(a))))
-            print('pairs left: ' + str(len(pairs_removed)))
+            print('pairs left: ' + str(len(pairs_pruned)))
 
             next_slot = slot + 1
             # move onto the next slot, calling recursively.
-            if can_solve_slot(time_table, pairs_removed, next_slot):
+            if can_solve_slot(time_table, pairs_pruned, next_slot):
                 return True
             else:
                 print('\nslot: ' + str(slot))
@@ -165,5 +169,30 @@ def can_assign_pair(time_table, day, pair):
         return False
 
     return True
+
+def forward_checking(pair, pairs, slot):
+    """
+    Apply forward checking to the given pairs to reduce the domain. This is done 
+    in two ways: the first is removing all domain elements with the module that
+    was just selected. The second is to remove elements from the domain with the 
+    tutor just selected UNLESS it is slot 5. This is because our MRV approach 
+    means that we first start will slot 1 of a day and go down the slots to slot 
+    5. A tutor cannot teach twice a day so if they have just been assigned, so 
+    they are removed from the domain but only if it is not slot 5. 
+    Finally, we check that the number of modules in the domain is equal to the 
+    number of slots left since if it is not, then we cannot fill the time table
+    with the given domain. Return an empty list if this is the case.
+    """
+    # removing module from domain.
+    pruned_pairs = [x for x in pairs if x[0] != pair[0]]
+    # removing tutor from domain if slot 5 of day.
+    if slot % 5 != 0:
+        pruned_pairs = [x for x in pruned_pairs if x[1] != pair[1]]
+    # check the number of modules
+    module_count = len(set([x[0] for x in pruned_pairs]))
+    if module_count < 25 - slot:
+        return []
+
+    return pruned_pairs
 
 solve_timetable()
