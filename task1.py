@@ -58,7 +58,6 @@ def can_solve_slot(time_table, pairs, slot):
         return True
 
     day, time_slot = minimum_remaining_value(slot)
-
     # sort the pairs by their number of least constraining values
     pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
 
