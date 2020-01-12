@@ -29,7 +29,7 @@ Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem20.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -47,8 +47,7 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
             if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
 
-    pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
-    return pairs
+    return sort_domain(pairs)
 
 def can_solve_slot(time_table, pairs, slot):
     """
@@ -67,7 +66,7 @@ def can_solve_slot(time_table, pairs, slot):
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
             print('Assigned ' + pair[0].name + ' : ' + pair[1].name)
-            print(least_constraining_value(pair, pairs))
+            print(constraining_values(pair, pairs))
             
             pairs_pruned = forward_checking(pair, pairs)
 
@@ -161,9 +160,8 @@ def sort_domain(pairs):
         if count is None:
             module_count[module_name] = 1
         else:
-            count += 1
+            module_count[module_name] += 1
 
-    print(module_count)
     # sort by least common module count
     return sorted(pairs, key=lambda x: module_count[x[0].name])
 
@@ -171,15 +169,6 @@ def constraining_values(pair, pairs):
     """
     This method returns the number of values left in the domain if the given
     pair was choosen.
-    """
-    remaining_domain_size = len(forward_checking(pair, pairs))
-    return remaining_domain_size
-
-def least_constraining_value(pair, pairs):
-    """
-    This method returns the number of values left in the domain if the given
-    pair was choosen. This is the same as counting the number of elements in the 
-    domain with the same module and then sorting in ascending order.
     """
     remaining_domain_size = len(forward_checking(pair, pairs))
     return remaining_domain_size

@@ -45,8 +45,7 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
             if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
 
-    pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
-    return pairs
+    return sort_domain(pairs)
 
 def can_solve_slot(time_table, pairs, slot):
     """
@@ -130,13 +129,22 @@ def minimum_remaining_value(slot):
     slot_meta = time_table_slots[str(slot)] 
     return slot_meta[0], slot_meta[1]
 
-def constraining_values(pair, pairs):
+def sort_domain(pairs):
     """
-    This method returns the number of values left in the domain if the given
-    pair was choosen.
+    This method is going to sort and return the elements of the domain.
     """
-    remaining_domain_size = len(forward_checking(pair, pairs))
-    return remaining_domain_size
+    # for each module, count the number of elements with that module.
+    module_count = {}
+    for pair in pairs:
+        module_name = pair[0].name
+        count = module_count.get(module_name)
+        if count is None:
+            module_count[module_name] = 1
+        else:
+            module_count[module_name] += 1
+
+    # sort by least common module count
+    return sorted(pairs, key=lambda x: module_count[x[0].name])
 
 def forward_checking(pair, pairs):
     """
