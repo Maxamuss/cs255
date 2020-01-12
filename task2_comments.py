@@ -1,6 +1,8 @@
 """
 Methods used in task 2. This is used for testing of methods and ideas. My final 
-working solution will be added to the scheduler.py file.
+working solution will be added to the scheduler.py file. This is a version of 
+task2.py that has logging (via print statements) to the console when the program
+is running.
 """
 import module
 import tutor
@@ -25,7 +27,7 @@ Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem10.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem18.txt")
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -42,10 +44,6 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
     pairs = []
     for module in modules:
         for tutor in tutors:
-            # if time_table.canTeach(tutor, module, False):
-            #     pairs.append(ModuleTutorPair(module, tutor, False))
-            # if time_table.canTeach(tutor, module, True):
-            #     pairs.append(ModuleTutorPair(module, tutor, True))
             if set(module.topics).issubset(set(tutor.expertise)):
                 pairs.append(ModuleTutorPair(module, tutor, False))
             if len([x for x in tutor.expertise if x in module.topics]) > 0:
@@ -93,6 +91,7 @@ def can_solve_slot(time_table, pairs, slot):
             print('Deleteing ' + pair.module.name)
             del time_table.schedule[day][time_slot]
     # no solution.
+    print('No solution')
     return False
 
 def can_assign_pair(time_table, day, pair):
@@ -103,14 +102,13 @@ def can_assign_pair(time_table, day, pair):
     2) A tutor can teach a maximum of 4 credits,
     """       
     # check that the tutor is not already teaching more than 2 credits that day.
-    this_slot_credits = 1 if pair.is_lab else 2
     day_credits = 0
     for slot in time_table.schedule[day].values():
         if slot[0] == pair.tutor:
             credit = 1 if slot[2] == 'lab' else 2
             day_credits += credit
 
-    if day_credits + this_slot_credits > 2:
+    if day_credits + pair.credit() > 2:
         return False
 
     # check the tutor is not teaching more than 4 credits.
@@ -121,7 +119,7 @@ def can_assign_pair(time_table, day, pair):
                 credit = 1 if slot[2] == 'lab' else 2
                 total_credits += credit
 
-    if total_credits + this_slot_credits > 4:
+    if total_credits + pair.credit() > 4:
         return False
 
     # passed all tests, pair is valid.
@@ -159,11 +157,9 @@ def forward_checking(pair, pairs):
     Apply forward checking to the given pairs to reduce the domain. by removing 
     all domain elements with the same module that was just selected. 
     """
-    if pair.is_lab:
-        pruned_pairs = [x for x in pairs if not (x.module == pair.module and x.is_lab)]
-    else:
-        pruned_pairs = [x for x in pairs if not (x.module == pair.module and not x.is_lab)]
-        
+    pruned_pairs = [
+        x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
+    ]
     return pruned_pairs
 
 class ModuleTutorPair:
@@ -173,16 +169,21 @@ class ModuleTutorPair:
         self.tutor = tutor
         self.is_lab = is_lab
 
-    def session_type(self):
-        if self.is_lab:
-            return 'lab'
-        return 'module'
-
     def __str__(self):
         return '(' + self.module.name + ', ' + self.tutor.name + ', ' + self.session_type() + ')' 
 
     def __repr__(self):
         return str(self)
+
+    def session_type(self):
+        if self.is_lab:
+            return 'lab'
+        return 'module'
+    
+    def credit(self):
+        if self.is_lab:
+            return 1
+        return 2
 
 """
 Utitlity methods
