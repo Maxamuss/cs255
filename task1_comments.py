@@ -1,6 +1,8 @@
 """
 Methods used in task 1. This is used for testing of methods and ideas. My final 
-working solution will be added to the scheduler.py file.
+working solution will be added to the scheduler.py file. This is a version of 
+task1.py that has logging (via print statements) to the console when the program
+is running.
 """
 import module
 import tutor

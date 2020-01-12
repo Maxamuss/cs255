@@ -25,7 +25,7 @@ Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem20.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -44,7 +44,7 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
         for tutor in tutors:
             if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
-                # if set(module.topics).issubset(set(tutor.expertise)):
+    
     return pairs
 
 def can_solve_slot(time_table, pairs, slot):
