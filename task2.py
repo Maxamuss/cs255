@@ -17,16 +17,20 @@ def solve_timetable_test(file_name):
     tutors, modules = rw.readRequirements(file_name)
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
+    generate_time_table_slot()
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print(file_name + ': ' + str(time_table.scheduleChecker(tutors, modules)))
 
 """
 Core methods for the CSP backtracking.
 """
+TIME_TABLE_SLOTS = {}
+
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
     tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     time_table = timetable.Timetable(2)
+    generate_time_table_slot()
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
     can_solve_slot(time_table, module_tutor_pairs, 1)
@@ -46,9 +50,19 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
                 pairs.append(ModuleTutorPair(module, tutor, False))
             if time_table.canTeach(tutor, module, True):
                 pairs.append(ModuleTutorPair(module, tutor, True))
+    # sort the pairs by their number of least constraining values. If there is a
+    # tie-break, lab sessions come before modules as they have less constraints.
+    return sort_domain(pairs)
 
-    return pairs
-
+def generate_time_table_slot():
+    global TIME_TABLE_SLOTS
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    counter = 1
+    for day in days:
+        for i in range(1, 11):
+            TIME_TABLE_SLOTS[str(counter)] = [day, i]
+            counter += 1
+    
 def can_solve_slot(time_table, pairs, slot):
     """
     This is going to be my first attempt traversing the timetable vertically 
@@ -60,13 +74,10 @@ def can_solve_slot(time_table, pairs, slot):
         return True
 
     day, time_slot = minimum_remaining_value(slot)
-    # sort the pairs by their number of least constraining values. If there is a
-    # tie-break, lab sessions come before modules as they have less constraints.
-    pairs = sorted(pairs, key=lambda x: (constraining_values(x, pairs), x.is_lab), reverse=True)
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
-            time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type())
+            time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type)
             pruned_pairs = forward_checking(pair, pairs)
 
             if can_solve_slot(time_table, pruned_pairs, slot + 1):
@@ -90,7 +101,7 @@ def can_assign_pair(time_table, day, pair):
             credit = 1 if slot[2] == 'lab' else 2
             day_credits += credit
 
-    if day_credits + pair.credit() > 2:
+    if day_credits + pair.credit > 2:
         return False
 
     # check the tutor is not teaching more than 4 credits.
@@ -101,7 +112,7 @@ def can_assign_pair(time_table, day, pair):
                 credit = 1 if slot[2] == 'lab' else 2
                 total_credits += credit
 
-    if total_credits + pair.credit() > 4:
+    if total_credits + pair.credit > 4:
         return False
 
     # passed all tests, pair is valid.
@@ -114,25 +125,26 @@ def minimum_remaining_value(slot):
     Tuesday slot 1 and repeating until Friday slot 10. It does this as the way to
     reduce the domain is by selecting a slot in the same day as the one just 
     selected as we can remove tutors and modules.
-    """
-    time_table_slots = {}
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    counter = 1
-    for day in days:
-        for i in range(1, 11):
-            time_table_slots[str(counter)] = [day, i]
-            counter += 1
-    
-    slot_meta = time_table_slots[str(slot)] 
+    """   
+    slot_meta = TIME_TABLE_SLOTS[str(slot)] 
     return slot_meta[0], slot_meta[1]
 
-def constraining_values(pair, pairs):
+def sort_domain(pairs):
     """
-    This method returns the number of values left in the domain if the given
-    pair was choosen.
+    This method is going to sort and return the elements of the domain.
     """
-    remaining_domain_size = len(forward_checking(pair, pairs))
-    return remaining_domain_size
+    # for each module, count the number of elements with that module.
+    module_count = {}
+    for pair in pairs:
+        module_name = pair.module.name + '_l' if pair.is_lab else pair.module.name
+        count = module_count.get(module_name)
+        if count is None:
+            module_count[module_name] = 1
+        else:
+            module_count[module_name] += 1
+
+    # sort by least common module count
+    return sorted(pairs, key=lambda x: (module_count[x.name], not x.is_lab))
 
 def forward_checking(pair, pairs):
     """
@@ -153,20 +165,28 @@ class ModuleTutorPair:
         self.is_lab = is_lab
 
     def __str__(self):
-        return '(' + self.module.name + ', ' + self.tutor[0].name + ', ' + self.session_type() + ')' 
+        return '(' + self.module.name + ', ' + self.tutor.name + ', ' + self.session_type + ')' 
 
     def __repr__(self):
         return str(self)
 
+    @property
     def session_type(self):
         if self.is_lab:
             return 'lab'
         return 'module'
-
+    
+    @property
     def credit(self):
         if self.is_lab:
             return 1
         return 2
+
+    @property
+    def name(self):
+        module_name = self.module.name
+        module_name = module_name + '_l' if self.is_lab else module_name
+        return module_name
 
 """
 Utitlity methods
@@ -182,4 +202,4 @@ def print_timetable(time_table, tutors, modules):
     print('----------------------------')
     print('Table valid status: ' + str(time_table.scheduleChecker(tutors, modules)))
 
-solve_timetable()
+# solve_timetable()

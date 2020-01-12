@@ -11,6 +11,7 @@ import timetable
 import random
 import math
 
+from time import time
 """
 Methods for testing.
 """
@@ -25,11 +26,14 @@ def solve_timetable_test(file_name):
 """
 Core methods for the CSP backtracking.
 """
+TIME_TABLE_SLOTS = {}
+
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem18.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem29.txt")
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
+    generate_time_table_slot()
     # attempt to solve the task
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print_timetable(time_table, tutors, modules)
@@ -49,7 +53,17 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
             if len([x for x in tutor.expertise if x in module.topics]) > 0:
                 pairs.append(ModuleTutorPair(module, tutor, True))
 
-    return pairs
+    return sort_domain(pairs)
+    # return pairs
+
+def generate_time_table_slot():
+    global TIME_TABLE_SLOTS
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    counter = 1
+    for day in days:
+        for i in range(1, 11):
+            TIME_TABLE_SLOTS[str(counter)] = [day, i]
+            counter += 1
 
 def can_solve_slot(time_table, pairs, slot):
     """
@@ -64,15 +78,20 @@ def can_solve_slot(time_table, pairs, slot):
 
     day, time_slot = minimum_remaining_value(slot)
     # sort the pairs by their number of least constraining values. If there is a
-    # tie-break, lab sessions come before modules as they have less constraint.
-    pairs = sorted(pairs, key=lambda x: (constraining_values(x, pairs), x.is_lab), reverse=True)
-    print([x for x in pairs[:5]])
-
+    # tie-break, lab sessions come before modules as they have less constraints.
+    # pairs = sort_domain(pairs)
+    # pairs2 = sorted(pairs, key=lambda x: (constraining_values(x, pairs), x.is_lab), reverse=True)
+    # pairs = sort_domain(pairs)
+    # pairs2 = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
+    # print(pairs == pairs2)
+    # if pairs != pairs2:
+    #     print("****************************************************************************************")
+    
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
-            time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type())
+            time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type)
             print(time_slot)
-            print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type())
+            print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type)
             
             pruned_pairs = forward_checking(pair, pairs)
 
@@ -108,7 +127,7 @@ def can_assign_pair(time_table, day, pair):
             credit = 1 if slot[2] == 'lab' else 2
             day_credits += credit
 
-    if day_credits + pair.credit() > 2:
+    if day_credits + pair.credit > 2:
         return False
 
     # check the tutor is not teaching more than 4 credits.
@@ -119,7 +138,7 @@ def can_assign_pair(time_table, day, pair):
                 credit = 1 if slot[2] == 'lab' else 2
                 total_credits += credit
 
-    if total_credits + pair.credit() > 4:
+    if total_credits + pair.credit > 4:
         return False
 
     # passed all tests, pair is valid.
@@ -143,6 +162,24 @@ def minimum_remaining_value(slot):
     
     slot_meta = time_table_slots[str(slot)] 
     return slot_meta[0], slot_meta[1]
+
+def sort_domain(pairs):
+    """
+    This method is going to sort and return the elements of the domain.
+    """
+    # for each module, count the number of elements with that module.
+    module_count = {}
+    for pair in pairs:
+        module_name = pair.module.name + '_l' if pair.is_lab else pair.module.name
+        count = module_count.get(module_name)
+        if count is None:
+            module_count[module_name] = 1
+        else:
+            module_count[module_name] += 1
+
+    # print(module_count)
+    # sort by least common module count
+    return sorted(pairs, key=lambda x: (module_count[x.name], not x.is_lab))
 
 def constraining_values(pair, pairs):
     """
@@ -170,20 +207,28 @@ class ModuleTutorPair:
         self.is_lab = is_lab
 
     def __str__(self):
-        return '(' + self.module.name + ', ' + self.tutor.name + ', ' + self.session_type() + ')' 
+        return '(' + self.module.name + ', ' + self.tutor.name + ', ' + self.session_type + ')' 
 
     def __repr__(self):
         return str(self)
 
+    @property
     def session_type(self):
         if self.is_lab:
             return 'lab'
         return 'module'
     
+    @property
     def credit(self):
         if self.is_lab:
             return 1
         return 2
+
+    @property
+    def name(self):
+        module_name = self.module.name
+        module_name = module_name + '_l' if self.is_lab else module_name
+        return module_name
 
 """
 Utitlity methods
