@@ -44,7 +44,8 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
         for tutor in tutors:
             if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
-    
+
+    pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
     return pairs
 
 def can_solve_slot(time_table, pairs, slot):
@@ -58,8 +59,6 @@ def can_solve_slot(time_table, pairs, slot):
         return True
 
     day, time_slot = minimum_remaining_value(slot)
-    # sort the pairs by their number of least constraining values
-    pairs = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
 
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
@@ -78,22 +77,19 @@ def can_assign_pair(time_table, day, pair):
     Check that the module-tutor pair given does not violate any of the 
     constraints.
     """       
-    # check that the tutor is not already teaching a module on the given day.
-    for slot in time_table.schedule[day].values():
-        if slot[0] == pair[1]:
-            return False
-
     # check the tutor is not teaching more than 2 modules.
     tutor_module_count = 0
-    for day_slots in time_table.schedule.items():
-        for slot in day_slots[1].values():
+    for day_slot in time_table.schedule.items():
+        for slot in day_slot[1].values():
+            # check that the tutor is not already teaching a module on the given day.
+            if day_slot[0] == day and slot[0] == pair[1]:
+                return False
             if slot[0] == pair[1]:
                 tutor_module_count += 1
 
     if tutor_module_count >= 2:
         return False
 
-    # passed all tests, pair is valid.
     return True
 
 def minimum_remaining_value(slot):
@@ -163,4 +159,4 @@ def print_timetable(time_table, tutors, modules):
     print('----------------------------')
     print('Table valid status: ' + str(time_table.task1Checker(tutors, modules)))
 
-solve_timetable()
+# solve_timetable()
