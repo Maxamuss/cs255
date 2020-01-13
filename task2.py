@@ -149,7 +149,7 @@ def sort_domain(pairs):
             tutor_count[pair.tutor.name] += 3 - pair.credit
 
     # sort by least common module count
-    return sorted(pairs, key=lambda x: (module_count[x.module_name], tutor_count[x.tutor.name], not x.is_lab))
+    return sorted(pairs, key=lambda x: (module_count[x.module_name], tutor_count[x.tutor.name], not x.is_lab, x.module.name))
 
 def forward_checking(time_table, pair, pairs):
     """

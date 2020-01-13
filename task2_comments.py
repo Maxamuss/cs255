@@ -31,7 +31,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem20.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem19.txt")
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     generate_time_table_slot()
@@ -47,23 +47,32 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
     start the backtracking.
     """
     pairs = []
-    for module in modules:
-        for tutor in tutors:
-            if time_table.canTeach(tutor, module, False):
-                pairs.append(ModuleTutorPair(module, tutor, False))
-            if time_table.canTeach(tutor, module, True):
-                pairs.append(ModuleTutorPair(module, tutor, True))
-    random.shuffle(modules)
-    random.shuffle(tutors)
-    pairs2 = []
-    for module in modules:
-        for tutor in tutors:
-            if time_table.canTeach(tutor, module, False):
-                pairs2.append(ModuleTutorPair(module, tutor, False))
-            if time_table.canTeach(tutor, module, True):
-                pairs2.append(ModuleTutorPair(module, tutor, True))
-
-    print(sort_domain(pairs2) == sort_domain(pairs))
+    for pair in zip(tutors, modules):
+        print(pair[0])
+        if time_table.canTeach(pair[0], pair[1], False):
+            pairs.append(ModuleTutorPair(pair[0], pair[1], False))
+        if time_table.canTeach(pair[0], pair[1], True):
+            pairs.append(ModuleTutorPair(pair[0], pair[1], True))
+    # for module in modules:
+    #     for tutor in tutors:
+    #         if time_table.canTeach(tutor, module, False):
+    #             pairs.append(ModuleTutorPair(module, tutor, False))
+    #         if time_table.canTeach(tutor, module, True):
+    #             pairs.append(ModuleTutorPair(module, tutor, True))
+    # random.shuffle(modules)
+    # random.shuffle(tutors)
+    # pairs2 = []
+    # for module in modules:
+    #     for tutor in tutors:
+    #         if time_table.canTeach(tutor, module, False):
+    #             pairs2.append(ModuleTutorPair(module, tutor, False))
+    #         if time_table.canTeach(tutor, module, True):
+    #             pairs2.append(ModuleTutorPair(module, tutor, True))
+    # a = sort_domain(pairs2)
+    # b = sort_domain(pairs)
+    # print(b)
+    # print(a)
+    # print(a == b)
     # print(pairs2)
 
     return sort_domain(pairs)
@@ -86,7 +95,7 @@ def can_solve_slot(time_table, pairs, slot):
     """
     print('\nslot: ' + str(slot))
     # check if all slots have been filled.
-    if slot == 51:
+    if slot == 1:
         return True
 
     day, time_slot = minimum_remaining_value(slot)
@@ -189,7 +198,6 @@ def sort_domain(pairs):
             tutor_count[pair.tutor.name] = 3 - pair.credit
         else:
             tutor_count[pair.tutor.name] += 3 - pair.credit
-
     # sort by least common module count
     return sorted(pairs, key=lambda x: (module_count[x.module_name], tutor_count[x.tutor.name], not x.is_lab))
 

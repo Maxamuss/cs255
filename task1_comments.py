@@ -29,7 +29,7 @@ Core methods for the CSP backtracking.
 """
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem20.txt")
     time_table = timetable.Timetable(1)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     # attempt to solve the task
@@ -47,6 +47,19 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
             if time_table.canTeach(tutor, module, False):
                 pairs.append([module, tutor])
 
+    random.shuffle(modules)
+    random.shuffle(tutors)
+    pairs2 = []
+    for module in modules:
+        for tutor in tutors:
+            if time_table.canTeach(tutor, module, False):
+                pairs2.append([module, tutor])
+
+    a = sort_domain(pairs)
+    b = sort_domain(pairs2)
+    print([x[0].name for x in pairs])
+    print([x[0].name for x in pairs2])
+    print(a == b)
     return sort_domain(pairs)
 
 def can_solve_slot(time_table, pairs, slot):
@@ -163,7 +176,7 @@ def sort_domain(pairs):
             module_count[module_name] += 1
 
     # sort by least common module count
-    return sorted(pairs, key=lambda x: module_count[x[0].name])
+    return sorted(pairs, key=lambda x: (module_count[x[0].name], x[0].name))
 
 def constraining_values(pair, pairs):
     """
