@@ -31,7 +31,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem18.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem20.txt")
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     generate_time_table_slot()
@@ -49,10 +49,22 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
     pairs = []
     for module in modules:
         for tutor in tutors:
-            if set(module.topics).issubset(set(tutor.expertise)):
+            if time_table.canTeach(tutor, module, False):
                 pairs.append(ModuleTutorPair(module, tutor, False))
-            if len([x for x in tutor.expertise if x in module.topics]) > 0:
+            if time_table.canTeach(tutor, module, True):
                 pairs.append(ModuleTutorPair(module, tutor, True))
+    random.shuffle(modules)
+    random.shuffle(tutors)
+    pairs2 = []
+    for module in modules:
+        for tutor in tutors:
+            if time_table.canTeach(tutor, module, False):
+                pairs2.append(ModuleTutorPair(module, tutor, False))
+            if time_table.canTeach(tutor, module, True):
+                pairs2.append(ModuleTutorPair(module, tutor, True))
+
+    print(sort_domain(pairs2) == sort_domain(pairs))
+    # print(pairs2)
 
     return sort_domain(pairs)
     # return pairs
@@ -86,6 +98,7 @@ def can_solve_slot(time_table, pairs, slot):
             print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type)
             
             pruned_pairs = forward_checking(time_table, pair, pairs)
+
 
             a = []
             for mod in pruned_pairs:
@@ -162,19 +175,23 @@ def sort_domain(pairs):
     """
     This method is going to sort and return the elements of the domain.
     """
-    # for each module, count the number of elements with that module.
+   # for each module, count the number of elements with that module.
     module_count = {}
+    tutor_count = {}
     for pair in pairs:
-        module_name = pair.module.name + '_l' if pair.is_lab else pair.module.name
-        count = module_count.get(module_name)
-        if count is None:
-            module_count[module_name] = 1
+        m_count = module_count.get(pair.module_name)
+        if m_count is None:
+            module_count[pair.module_name] = 1
         else:
-            module_count[module_name] += 1
+            module_count[pair.module_name] += 1
+        t_count = tutor_count.get(pair.tutor.name)
+        if t_count is None:
+            tutor_count[pair.tutor.name] = 3 - pair.credit
+        else:
+            tutor_count[pair.tutor.name] += 3 - pair.credit
 
-    # print(module_count)
     # sort by least common module count
-    return sorted(pairs, key=lambda x: (module_count[x.name], not x.is_lab))
+    return sorted(pairs, key=lambda x: (module_count[x.module_name], tutor_count[x.tutor.name], not x.is_lab))
 
 def constraining_values(pair, pairs):
     """
@@ -238,7 +255,7 @@ class ModuleTutorPair:
         return 2
 
     @property
-    def name(self):
+    def module_name(self):
         module_name = self.module.name
         module_name = module_name + '_l' if self.is_lab else module_name
         return module_name
