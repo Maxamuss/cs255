@@ -11,6 +11,7 @@ import timetable
 import random
 import math
 
+import sys
 from time import time
 """
 Methods for testing.
@@ -30,7 +31,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem29.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem18.txt")
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     generate_time_table_slot()
@@ -77,23 +78,14 @@ def can_solve_slot(time_table, pairs, slot):
         return True
 
     day, time_slot = minimum_remaining_value(slot)
-    # sort the pairs by their number of least constraining values. If there is a
-    # tie-break, lab sessions come before modules as they have less constraints.
-    # pairs = sort_domain(pairs)
-    # pairs2 = sorted(pairs, key=lambda x: (constraining_values(x, pairs), x.is_lab), reverse=True)
-    # pairs = sort_domain(pairs)
-    # pairs2 = sorted(pairs, key=lambda x: constraining_values(x, pairs), reverse=True)
-    # print(pairs == pairs2)
-    # if pairs != pairs2:
-    #     print("****************************************************************************************")
-    
+
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type)
             print(time_slot)
             print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type)
             
-            pruned_pairs = forward_checking(pair, pairs)
+            pruned_pairs = forward_checking(time_table, pair, pairs)
 
             a = []
             for mod in pruned_pairs:
@@ -119,7 +111,7 @@ def can_assign_pair(time_table, day, pair):
     constraints. The constraints are:
     1) A tutor cannot teach more than 2 credits a day,
     2) A tutor can teach a maximum of 4 credits,
-    """       
+    """
     # check that the tutor is not already teaching more than 2 credits that day.
     day_credits = 0
     for slot in time_table.schedule[day].values():
@@ -128,6 +120,7 @@ def can_assign_pair(time_table, day, pair):
             day_credits += credit
 
     if day_credits + pair.credit > 2:
+        print('over daily credits')
         return False
 
     # check the tutor is not teaching more than 4 credits.
@@ -139,9 +132,11 @@ def can_assign_pair(time_table, day, pair):
                 total_credits += credit
 
     if total_credits + pair.credit > 4:
+        print('over weekyly credits')
         return False
 
     # passed all tests, pair is valid.
+    print('pair valid')
     return True
 
 def minimum_remaining_value(slot):
@@ -189,14 +184,32 @@ def constraining_values(pair, pairs):
     remaining_domain_size = len(forward_checking(pair, pairs))
     return remaining_domain_size
 
-def forward_checking(pair, pairs):
+def forward_checking(time_table, pair, pairs):
     """
     Apply forward checking to the given pairs to reduce the domain. by removing 
-    all domain elements with the same module that was just selected. 
+    all domain elements with the same module that was just selected. Will also 
+    check that the tutor of the pair given has not reached their weekly credit
+    limit.
     """
-    pruned_pairs = [
-        x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
-    ]
+    total_credits = 0
+    for day_slots in time_table.schedule.items():
+        for slot in day_slots[1].values():
+            if slot[0] == pair.tutor:
+                credit = 1 if slot[2] == 'lab' else 2
+                total_credits += credit
+
+    if total_credits >= 4:
+        print('removing tutor')
+        pruned_pairs = [
+            x for x in pairs if x.tutor != pair.tutor and not (
+                x.module == pair.module and x.is_lab == pair.is_lab
+            )
+        ]
+    else:
+        pruned_pairs = [
+            x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
+        ]
+        
     return pruned_pairs
 
 class ModuleTutorPair:

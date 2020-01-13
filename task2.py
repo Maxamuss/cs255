@@ -78,7 +78,7 @@ def can_solve_slot(time_table, pairs, slot):
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
             time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type)
-            pruned_pairs = forward_checking(pair, pairs)
+            pruned_pairs = forward_checking(time_table, pair, pairs)
 
             if can_solve_slot(time_table, pruned_pairs, slot + 1):
                 return True
@@ -146,14 +146,30 @@ def sort_domain(pairs):
     # sort by least common module count
     return sorted(pairs, key=lambda x: (module_count[x.name], not x.is_lab))
 
-def forward_checking(pair, pairs):
+def forward_checking(time_table, pair, pairs):
     """
     Apply forward checking to the given pairs to reduce the domain. by removing 
-    all domain elements with the same module that was just selected. 
+    all domain elements with the same module that was just selected. Will also 
+    check that the tutor of the pair given has not reached their weekly credit
+    limit.
     """
-    pruned_pairs = [
-        x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
-    ]
+    total_credits = 0
+    for day_slots in time_table.schedule.items():
+        for slot in day_slots[1].values():
+            if slot[0] == pair.tutor:
+                credit = 1 if slot[2] == 'lab' else 2
+                total_credits += credit
+
+    if total_credits >= 4:
+        pruned_pairs = [
+            x for x in pairs if x.tutor != pair.tutor and not (
+                x.module == pair.module and x.is_lab == pair.is_lab
+            )
+        ]
+    else:
+        pruned_pairs = [
+            x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
+        ]
         
     return pruned_pairs
 
