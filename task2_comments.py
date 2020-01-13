@@ -31,7 +31,8 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem19.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems2/Problem58.txt")
+    print(len(modules))
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     generate_time_table_slot()
@@ -47,18 +48,12 @@ def generate_module_tutor_pairs(time_table, modules, tutors):
     start the backtracking.
     """
     pairs = []
-    for pair in zip(tutors, modules):
-        print(pair[0])
-        if time_table.canTeach(pair[0], pair[1], False):
-            pairs.append(ModuleTutorPair(pair[0], pair[1], False))
-        if time_table.canTeach(pair[0], pair[1], True):
-            pairs.append(ModuleTutorPair(pair[0], pair[1], True))
-    # for module in modules:
-    #     for tutor in tutors:
-    #         if time_table.canTeach(tutor, module, False):
-    #             pairs.append(ModuleTutorPair(module, tutor, False))
-    #         if time_table.canTeach(tutor, module, True):
-    #             pairs.append(ModuleTutorPair(module, tutor, True))
+    for module in modules:
+        for tutor in tutors:
+            if time_table.canTeach(tutor, module, False):
+                pairs.append(ModuleTutorPair(module, tutor, False))
+            if time_table.canTeach(tutor, module, True):
+                pairs.append(ModuleTutorPair(module, tutor, True))
     # random.shuffle(modules)
     # random.shuffle(tutors)
     # pairs2 = []
@@ -95,7 +90,7 @@ def can_solve_slot(time_table, pairs, slot):
     """
     print('\nslot: ' + str(slot))
     # check if all slots have been filled.
-    if slot == 1:
+    if slot == 40:
         return True
 
     day, time_slot = minimum_remaining_value(slot)
