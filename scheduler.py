@@ -51,13 +51,133 @@ class Scheduler:
 		#Do not change this line
 		timetableObj = timetable.Timetable(1)
 		
-		#Here is where you schedule your timetable
-
-		#This line generates a random timetable, that may not be valid. You can use this or delete it.
-		self.randomModSchedule(timetableObj)
+		module_tutor_pairs = self.task_1_generate_module_tutor_pairs(timetableObj, self.moduleList, self.tutorList)
+		self.task_1_can_solve_slot(timetableObj, module_tutor_pairs, 1)
 
 		#Do not change this line
 		return timetableObj
+
+	def task_1_generate_module_tutor_pairs(self, time_table, modules, tutors):
+		"""
+		Generate a valid list of module-tutor pairs. For a pair to be valid, the 
+		topics of a module must all be in a tutors expertise. This is the as doing it
+		in the task_1_can_assign_pair method but I do here to reduce the domain before we 
+		start the backtracking.
+		"""
+		pairs = []
+		for module in modules:
+			for tutor in tutors:
+				if time_table.canTeach(tutor, module, False):
+					pairs.append([module, tutor])
+
+		return self.task_1_sort_domain(pairs)
+
+	def task_1_can_solve_slot(self, time_table, pairs, slot):
+		"""
+		This is going to be my first attempt traversing the timetable vertically 
+		starting on Monday, time slot 1. When time slot 5 is populated, move to the 
+		next day, time slot 1.
+		"""
+		# check if all slots have been filled.
+		if slot == 26:
+			return True
+
+		day, time_slot = self.task_1_minimum_remaining_value(slot)
+
+		for pair in pairs:
+			if self.task_1_can_assign_pair(time_table, day, pair):
+				time_table.addSession(day, time_slot, pair[1], pair[0], 'module')
+				pruned_pairs = self.task_1_forward_checking(pair, pairs)
+
+				if self.task_1_can_solve_slot(time_table, pruned_pairs, slot + 1):
+					return True
+
+				del time_table.schedule[day][time_slot]
+		# no solution.
+		return False
+
+	def task_1_can_assign_pair(self, time_table, day, pair):
+		"""
+		Check that the module-tutor pair given does not violate any of the 
+		constraints.
+		"""       
+		# check the tutor is not teaching more than 2 modules.
+		tutor_module_count = 0
+		for day_slot in time_table.schedule.items():
+			for slot in day_slot[1].values():
+				# check that the tutor is not already teaching a module on the given day.
+				if day_slot[0] == day and slot[0] == pair[1]:
+					return False
+				if slot[0] == pair[1]:
+					tutor_module_count += 1
+
+		if tutor_module_count >= 2:
+			return False
+
+		return True
+
+	def task_1_minimum_remaining_value(self, slot):
+		"""
+		This method chooses the variable with the fewest remaining values. It is 
+		effectively starting a Monday slot 1 then slot 2 ... slot 5 then going to 
+		Tuesday slot 1 and repeating until Friday slot 5. It does this as the way to
+		reduce the domain is by selecting a slot in the same day as the one just 
+		selected as we can remove tutors and modules.
+		"""
+		time_table_slots = {
+			'1': ['Monday', 1],
+			'2': ['Monday', 2],
+			'3': ['Monday', 3],
+			'4': ['Monday', 4],
+			'5': ['Monday', 5],
+			'6': ['Tuesday', 1],
+			'7': ['Tuesday', 2],
+			'8': ['Tuesday', 3],
+			'9': ['Tuesday', 4],
+			'10': ['Tuesday', 5],
+			'11': ['Wednesday', 1],
+			'12': ['Wednesday', 2],
+			'13': ['Wednesday', 3],
+			'14': ['Wednesday', 4],
+			'15': ['Wednesday', 5],
+			'16': ['Thursday', 1],
+			'17': ['Thursday', 2],
+			'18': ['Thursday', 3],
+			'19': ['Thursday', 4],
+			'20': ['Thursday', 5],
+			'21': ['Friday', 1],
+			'22': ['Friday', 2],
+			'23': ['Friday', 3],
+			'24': ['Friday', 4],
+			'25': ['Friday', 5]
+		}
+		slot_meta = time_table_slots[str(slot)] 
+		return slot_meta[0], slot_meta[1]
+
+	def task_1_sort_domain(self, pairs):
+		"""
+		This method is going to sort and return the elements of the domain.
+		"""
+		# for each module, count the number of elements with that module.
+		module_count = {}
+		for pair in pairs:
+			module_name = pair[0].name
+			count = module_count.get(module_name)
+			if count is None:
+				module_count[module_name] = 1
+			else:
+				module_count[module_name] += 1
+
+		# sort by least common module count
+		return sorted(pairs, key=lambda x: module_count[x[0].name])
+
+	def task_1_forward_checking(self, pair, pairs):
+		"""
+		Apply forward checking to the given pairs to reduce the domain. by removing 
+		all domain elements with the same module that was just selected. 
+		"""
+		pruned_pairs = [x for x in pairs if x[0] != pair[0]]
+		return pruned_pairs
 
 	#Now, we have introduced lab sessions. Each day now has ten sessions, and there is a lab session as well as a module session.
 	#All module and lab sessions must be assigned to a slot, and each module and lab session require a tutor.
