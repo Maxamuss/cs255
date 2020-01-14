@@ -23,16 +23,16 @@ def solve_timetable_test(file_name):
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print(file_name + ': ' + str(time_table.task1Checker(tutors, modules)))
-    simulated_annealing(time_table)
 
 """
 Core methods for the CSP backtracking.
 """
 TIME_TABLE_SLOTS = {}
+bound = 12000
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem3.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     print(len(modules))
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
@@ -40,7 +40,6 @@ def solve_timetable():
     # attempt to solve the task
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print_timetable(time_table, tutors, modules)
-    simulated_annealing(time_table, tutors, modules)
 
 def generate_module_tutor_pairs(time_table, modules, tutors):
     """
@@ -68,7 +67,7 @@ def generate_time_table_slot():
             TIME_TABLE_SLOTS[str(counter)] = [day, i]
             counter += 1
 
-def can_solve_slot(time_table, pairs, slot):
+def can_solve_slot(time_table, pairs, slot, cost=0):
     """
     This is going to be my first attempt traversing the timetable vertically 
     starting on Monday, time slot 1. When time slot 5 is populated, move to the 
@@ -81,13 +80,29 @@ def can_solve_slot(time_table, pairs, slot):
 
     day, time_slot = minimum_remaining_value(slot)
 
+    pairs = sort_pairs(time_table, slot, day, cost, pairs)
+    print([calc_path_cost(time_table, day, cost, x) for x in pairs][:10])
+
     for pair in pairs:
         if can_assign_pair(time_table, day, pair):
+            path_cost = calc_path_cost(time_table, day, cost, pair)
+
             time_table.addSession(day, time_slot, pair.tutor, pair.module, pair.session_type)
+
+            heuristic_cost = calc_heuristic_cost(time_table, slot, day, time_slot, pair)
+            new_cost = path_cost + heuristic_cost
+            print(path_cost)
+            if new_cost >= bound:
+                print('**********************************')
+                del time_table.schedule[day][time_slot]
+                break
+
             print(time_slot)
             print('Assigned ' + pair.module.name + ' : ' + pair.tutor.name + ' : ' + pair.session_type)
             
-            pruned_pairs = forward_checking(time_table, pair, pairs)
+
+
+            pruned_pairs = forward_checking(time_table, slot, pair, pairs)
 
             a = []
             for mod in pruned_pairs:
@@ -96,7 +111,7 @@ def can_solve_slot(time_table, pairs, slot):
             print('pairs left: ' + str(len(pruned_pairs)))
 
 
-            if can_solve_slot(time_table, pruned_pairs, slot + 1):
+            if can_solve_slot(time_table, pruned_pairs, slot + 1, path_cost):
                 return True
             else:
                 print('\nslot: ' + str(slot))
@@ -160,6 +175,74 @@ def minimum_remaining_value(slot):
     slot_meta = time_table_slots[str(slot)] 
     return slot_meta[0], slot_meta[1]
 
+def calc_heuristic_cost(time_table, slot, day, time_slot, pair):
+    """
+    Calculate the lower bound estimate of the cost to the goal. This is going to 
+    try to see what would be needed to create the optimal time table and work 
+    out that cost.
+    """
+    return 50 * (50 - slot)
+
+def calc_path_cost(time_table, day, cost, pair):
+    """
+    This method will calculate the cost of adding the given pair.
+    """
+    PREV_DAY = {
+        'Tuesday': 'Monday',
+        'Wednesday': 'Tuesday',
+        'Thursday': 'Wednesday',
+        'Friday': 'Thursday'
+    }
+
+    if pair.is_lab:
+        # look in the and calc cost of adding this lab
+        labs = 0
+        lab_today = False
+        for day_slots in time_table.schedule.items():
+            for slot in day_slots[1].values():
+                if slot[2] == 'lab' and slot[0] == pair.tutor:
+                    labs += 1
+                    if day_slots[0] == day:
+                        lab_today = True
+
+        discount = 0.5 * (250 - (50 * (labs - 1))) if lab_today else 0
+        today_discount = 0.5 if lab_today else 1
+        lab_cost = (250 - (50 * labs)) * today_discount
+
+        return cost + lab_cost - discount
+    else:
+        first_day = None
+        # check to see if the tutor is already teaching a module this week and if 
+        # so, what day it is on
+        for day_slots in time_table.schedule.items():
+            for slot in day_slots[1].values():
+                if slot[0] == pair.tutor and slot[2] == 'module':
+                    first_day = day_slots[0]
+        
+        if first_day is not None and day != 'Monday':
+            if first_day == PREV_DAY[day]:
+                return cost + 100
+            return cost + 300
+        return cost + 500
+
+def sort_pairs(time_table, slot, day, cost, pairs):
+    """
+    My first attempt is to first allocate all of the labs, then the modules.
+    """
+    def h(x):
+        """
+        Return the number of labs/modules already being taught
+        """
+        total_credits = 0
+        for day_slots in time_table.schedule.items():
+            for slot in day_slots[1].values():
+                if slot[0] == x.tutor:
+                    credit = 1 if slot[2] == 'lab' else 2
+                    total_credits += credit
+        return total_credits
+    
+    return sorted(pairs, key=lambda x: ( calc_path_cost(time_table, day, cost, x)))
+
 def sort_domain(pairs):
     """
     This method is going to sort and return the elements of the domain.
@@ -189,7 +272,7 @@ def constraining_values(pair, pairs):
     remaining_domain_size = len(forward_checking(pair, pairs))
     return remaining_domain_size
 
-def forward_checking(time_table, pair, pairs):
+def forward_checking(time_table, slot, pair, pairs):
     """
     Apply forward checking to the given pairs to reduce the domain. by removing 
     all domain elements with the same module that was just selected. Will also 
@@ -198,9 +281,9 @@ def forward_checking(time_table, pair, pairs):
     """
     total_credits = 0
     for day_slots in time_table.schedule.items():
-        for slot in day_slots[1].values():
-            if slot[0] == pair.tutor:
-                credit = 1 if slot[2] == 'lab' else 2
+        for s in day_slots[1].values():
+            if s[0] == pair.tutor:
+                credit = 1 if s[2] == 'lab' else 2
                 total_credits += credit
 
     if total_credits >= 4:
@@ -214,56 +297,18 @@ def forward_checking(time_table, pair, pairs):
         pruned_pairs = [
             x for x in pairs if not (x.module == pair.module and x.is_lab == pair.is_lab)
         ]
-        
+
+    # count number of modules and labs left:'
+    count = {}
+    for pair in pruned_pairs:
+        if pair.module_name in count:
+            count[pair.module_name] += 1
+        else:
+            count[pair.module_name] = 1
+
+    if sum(count.values()) < slot:
+        return []
     return pruned_pairs
-
-def simulated_annealing(time_table, tutors, modules, iterations=100000):
-    """
-    This method will do simulated_annealing to try find a better, or hopefully
-    optimal solution. It will randomly swap
-    """
-    def sigmoid(gamma):
-        if gamma < 0:
-            return 1 - 1 / (1 + math.exp(gamma))
-        return 1 / (1 + math.exp(-gamma))
-
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-
-    best_time_table = timetable.Timetable(2)
-    lowest_cost = time_table.cost
-
-    print(lowest_cost)
-
-    for k in range(1, iterations):
-        T = iterations / k + 1
-
-        if T == 0:
-            return time_table
-
-        # randomly swap two slots
-        day1 = days[random.randint(0, 4)]
-        day2 = days[random.randint(0, 4)]
-        slot1 = random.randint(1, 10)
-        slot2 = random.randint(1, 10)
-        module1 = time_table.getSession(day1, slot1)
-        module2 = time_table.getSession(day2, slot2)
-        time_table.addSession(day1, slot1, module2[0], module2[1], module2[2])
-        time_table.addSession(day2, slot2, module1[0], module1[1], module1[2])
-
-        if time_table.scheduleChecker(tutors, modules):
-            if time_table.cost < lowest_cost:
-                print('*******************')
-                lowest_cost = time_table.cost
-                for day_slots in time_table.schedule.items():
-                    for slot, value in day_slots[1].items():
-                        best_time_table.schedule[day_slots[0]] = time_table.schedule[day_slots[0]].values()
-            elif sigmoid((time_table.cost - lowest_cost) / T) < random.random():
-                time_table.addSession(day1, slot1, module1[0], module1[1], module1[2])
-                time_table.addSession(day2, slot2, module2[0], module2[1], module2[2])
-
-    print(lowest_cost)
-    best_time_table.scheduleChecker(tutors, modules)
-    print(best_time_table.cost)
 
 class ModuleTutorPair:
 

@@ -81,8 +81,31 @@ The domain size of the problem was now much bigger and as such I had to really u
 \item Least Constraining Value: Due to the increased domain size, the sorting of it became very important. Like last time, I sorted the list in order of least common modules. The difference this time is that if there is a tie break, the pairs are sorted by lowest frequency of tutors and then with labs first. This was to make sure that the elements with the smallest constraining values were the one first selected by each variable in the backtracking. A poorly chosen element in the domain could lead to exponential wasted run time due to exploring and then backtracking branches. 
 \item Minimum Remaining Value: this follows the same reasoning as task 1 except now there are 10 slots each day and as such, the variable is not changed to another day until it reaches slot 10 of any given day.
 \item Forward Checking: Like in task 1, I remove all elements from the domain with the same module but this time only remove if they have the same is\_lab Boolean value as the pair just added to the timetable. This is because now it not true that a elements with the same module can be removed from the domain as the one just added to the timetable due to the fact that there are both a module and lab session for each module. Hence, I also remove any elements with teachers that have used up all of their weekly credits (4). This helps reduce the domain size for future variables and improve the run time of the algorithm dramatically.
-
-
 \end{itemize}
+I am again happy with my implementation of the backtracking algorithm for this task as I got quick run times for all examples. One stumbling block of the algorithm however was that depending on the order that the modules and tutors were given, the algorithm would have different run times due to the amount of backtracking necessary. However, by my approach of sorting the domain first, the is no way around this unless I pander to each individual data set. 
+
+\section{Task 3: Cost-effective Scheduling}
+The final task of the assignment added a cost for the assignment of each module or lab. This cost was variable depending on the placement of and tutors of other modules and labs. This lead to an interesting optimization problem. 
+There is a theoretical optimal cost for 
+
+
+I have narrowed the methods down for this problem:
+
+\begin{itemize}
+\item Hill Climbing: is a greedy algorithm that moves in the direction that optimizes the cost. The algorithm uses feedback to decide the direction to move in the search space.
+\item A* Algorithm: searches the path using both path cost and heuristic values.
+\item Simulated Annealing: picks a variable at random and a new value at random. If it is an improvement, adopt it probabilistically depending on a temperature parameter, which is reduced over time.
+\item Depth-first Branch-and-Bound: combines depth-first search with heuristic information to find the optimal solution.
+\end{itemize}
+It is clear that there are many ways to approach this problem each with their own merits as well as their own drawbacks. I decided to go with simulated annealing. The way this works is that I use a similar algorithm to task 2 in order to find an valid timetable. I then keep swapping 2 slots around in the timetable for a fixed amount of iterations. For each iteration, I have a temperature parameter. If the timetable is valid after the swap:
+\begin{itemize}
+\item if the new cost of the timetable is less than the current lowest cost timetable, keep the changes and move onto the next iteration.
+\item if the new cost is more than the current lowest cost timetable then:
+    \begin{itemize}
+    \item I calculate a probability function defined as \(e(\Delta c / T \). If this value is greater than or equal to a random number generated between 0 and 1 then I keep the changes.
+    \item If the probability function is less than the random number then I revert the changes and move onto the next iteration. 
+    \end{itemize}
+\end{itemize}
+This method reduces the cost of the timetable in an efficient manor. Theoretically, it could find the optimal solution for the timetable in terms of cost. However, this could only happen if the correct modules and labs are chosen in the first place. By this I mean that there has to be 6 lots of 4 labs taught by one tutor, 11 lots of 2 module taught by 1 tutor and two more tutors teaching a module and a lab each. If these conditions are not met then you cannot find the optimal solution to the timetable. This does mean that my algorithm may not necessarily find the optimal solution. But this is the trade-off that  I have chosen between speed and space and lowest cost. 
 
 \end{document}
