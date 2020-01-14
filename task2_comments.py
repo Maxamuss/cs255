@@ -31,7 +31,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem58.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     print(len(modules))
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)

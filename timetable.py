@@ -73,7 +73,7 @@ class Timetable:
 			i = 0
 			for top in topics:
 				if top not in tutor.expertise:
-					print(str(mod.name) + " module session error.")
+					# print(str(mod.name) + " module session error.")
 					return False
 
 			return True
@@ -88,7 +88,7 @@ class Timetable:
 
 					return True
 
-			print(str(mod.name) + " lab session error.")
+			# print(str(mod.name) + " lab session error.")
 			return False	
 
 	#A checker to make sure your task 1 schedule is legal. 
@@ -101,7 +101,7 @@ class Timetable:
 		for day in self.schedule:
 			dayList = self.schedule[day]
 			if len(dayList) != 5:
-				print(str(day) + " does not have every slot assigned.")
+				# print(str(day) + " does not have every slot assigned.")
 				return False
 			tutorsToday = list()
 
@@ -111,14 +111,14 @@ class Timetable:
 
 				#Make sure that each module is only taught once
 				if mod.name in modulesAssigned:
-					print(str(mod.name) + " is being taught twice.")
+					# print(str(mod.name) + " is being taught twice.")
 					return False
 				else:
 					modulesAssigned.append(mod.name)
 
 				#We make sure every tutor is only teaching a single module a day
 				if tut.name in tutorsToday:
-					print(str(tut.name) + " is teaching multiple modules on " + str(day))
+					# print(str(tut.name) + " is teaching multiple modules on " + str(day))
 					return False
 				else:
 					tutorsToday.append(tut.name)
@@ -128,14 +128,14 @@ class Timetable:
 					modCount = tutorCount[tut.name]
 					tutorCount[tut.name] = tutorCount[tut.name] + 1
 					if modCount == 2:
-						print(str(tut.name) + " is teaching more than 2 modules a week.")
+						# print(str(tut.name) + " is teaching more than 2 modules a week.")
 						return False
 				else:
 					tutorCount[tut.name] = 1
 
 				#Finally, we make sure that the tutor assinged to each module, is capable of teaching it. 
 				if not self.canTeach(tut, mod, False):
-					print(str(tut.name) + " can not teach module " + str(mod.name) + ", their expertise does not match the modules topic.")
+					# print(str(tut.name) + " can not teach module " + str(mod.name) + ", their expertise does not match the modules topic.")
 					return False
 
 			tutorsYesterday = tutorsToday
@@ -166,7 +166,7 @@ class Timetable:
 
 			#Again, we check each day has all of its slots assigned
 			if len(dayList) != 10:
-				print(str(day) + " does not have every slot assigned.")
+				# print(str(day) + " does not have every slot assigned.")
 				return False
 
 			tutorsToday = dict()
@@ -180,28 +180,28 @@ class Timetable:
 				#We check that each module has only a single entry for both module sessions and lab sessions
 				if sessionType == "module":
 					if mod.name in modulesAssigned:
-						print(str(mod.name) + " is being taught twice.")
+						# print(str(mod.name) + " is being taught twice.")
 						return False
 					else:
 						modulesAssigned.append(mod.name)
 
 				elif sessionType == "lab":
 					if mod.name in labsAssigned:
-						print(str(mod.name) + " has two lab sessions.")
+						# print(str(mod.name) + " has two lab sessions.")
 						return False
 					else:
 						labsAssigned.append(mod.name)	
 
 				#We make sure that an illegal session type hasn't been entered somehow
 				else:
-					print(str(mod.name) + " has been given a session that is not a module or a lab")
+					# print(str(mod.name) + " has been given a session that is not a module or a lab")
 					return False
 
 				#We now go through every tutor, and make sure they are not exceeding their credit limit.	
 				if tut.name in tutorsToday:
 					#This branch means the tutor is already teaching something today
 					if tutorsToday[tut.name] >= 2:
-						print(str(tut.name) + " is teaching two credits already on " + str(day))
+						# print(str(tut.name) + " is teaching two credits already on " + str(day))
 						return False
 					else:
 						#We calculate the correct cost for the module
@@ -253,18 +253,18 @@ class Timetable:
 
 				#Make sure tutor does not exceed their credit limit
 				if tutorCount[tut.name] > 4:
-						print(str(tut.name) + " is teaching already teaching the max amount of credits")
+						# print(str(tut.name) + " is teaching already teaching the max amount of credits")
 						return False
 
 				#check is the tutor can legally teach the session, we use a boolean expression to determine if we're evaluating a module or lab session
 				if not self.canTeach(tut, mod, sessionType=="lab"):
-					print(str(tut.name) + " can not teach module " + str(mod.name) + ", their expertise does not match the modules topic.")
+					# print(str(tut.name) + " can not teach module " + str(mod.name) + ", their expertise does not match the modules topic.")
 					return False				
 
 			#One last check to make sure daily credits haven't been exceeded
 			for name in tutorsToday:
 				if tutorsToday[name] > 2:
-					print(str(name) + " is teaching more than 2 credits today")
+					# print(str(name) + " is teaching more than 2 credits today")
 					return False
 
 			tutorsYesterday = tutorsToday
@@ -273,7 +273,7 @@ class Timetable:
 		#One final check to make sure total credits haven't been exceeded
 		for name in tutorCount:
 			if tutorCount[name] > 4:
-				print(str(name) + " is teaching more than 4 credits overall")
+				# print(str(name) + " is teaching more than 4 credits overall")
 				return False
 
 		#If we get here, schedule is legal, so we assign the cost and return True
