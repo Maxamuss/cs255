@@ -19,7 +19,7 @@ Methods for testing.
 def solve_timetable_test(file_name):
     rw = ReaderWriter.ReaderWriter()
     tutors, modules = rw.readRequirements(file_name)
-    time_table = timetable.Timetable(2)
+    time_table = timetable.Timetable(3)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print(file_name + ': ' + str(time_table.task1Checker(tutors, modules)))
@@ -32,7 +32,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems/Problem3.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem4.txt")
     print(len(modules))
     time_table = timetable.Timetable(2)
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
@@ -40,7 +40,8 @@ def solve_timetable():
     # attempt to solve the task
     can_solve_slot(time_table, module_tutor_pairs, 1)
     print_timetable(time_table, tutors, modules)
-    simulated_annealing(time_table, tutors, modules)
+    t = simulated_annealing(time_table, tutors, modules)
+    print(t.cost)
 
 def generate_module_tutor_pairs(time_table, modules, tutors):
     """
@@ -217,10 +218,10 @@ def forward_checking(time_table, pair, pairs):
         
     return pruned_pairs
 
-def simulated_annealing(time_table, tutors, modules, iterations=100000):
+def simulated_annealing(time_table, tutors, modules, iterations=10000):
     """
     This method will do simulated_annealing to try find a better, or hopefully
-    optimal solution. It will randomly swap
+    optimal solution. It will randomly swap two slots.
     """
     def sigmoid(gamma):
         if gamma < 0:
@@ -229,16 +230,19 @@ def simulated_annealing(time_table, tutors, modules, iterations=100000):
 
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
-    best_time_table = timetable.Timetable(2)
-    lowest_cost = time_table.cost
+    initial = timetable.Timetable(3)
+    for day_slots in time_table.schedule.items():
+        for slot, value in day_slots[1].items():
+            initial.schedule[day_slots[0]][slot] = time_table.schedule[day_slots[0]][slot]
 
-    print(lowest_cost)
+    best_time_table = timetable.Timetable(3)
+    lowest_cost = time_table.cost
 
     for k in range(1, iterations):
         T = iterations / k + 1
 
         if T == 0:
-            return time_table
+            break
 
         # randomly swap two slots
         day1 = days[random.randint(0, 4)]
@@ -252,18 +256,18 @@ def simulated_annealing(time_table, tutors, modules, iterations=100000):
 
         if time_table.scheduleChecker(tutors, modules):
             if time_table.cost < lowest_cost:
-                print('*******************')
                 lowest_cost = time_table.cost
                 for day_slots in time_table.schedule.items():
                     for slot, value in day_slots[1].items():
-                        best_time_table.schedule[day_slots[0]] = time_table.schedule[day_slots[0]].values()
+                        best_time_table.schedule[day_slots[0]][slot] = time_table.schedule[day_slots[0]][slot]
             elif sigmoid((time_table.cost - lowest_cost) / T) < random.random():
                 time_table.addSession(day1, slot1, module1[0], module1[1], module1[2])
                 time_table.addSession(day2, slot2, module2[0], module2[1], module2[2])
 
-    print(lowest_cost)
-    best_time_table.scheduleChecker(tutors, modules)
-    print(best_time_table.cost)
+    if best_time_table.scheduleChecker(tutors, modules):
+        return best_time_table
+    initial.scheduleChecker(tutors, modules)
+    return initial
 
 class ModuleTutorPair:
 

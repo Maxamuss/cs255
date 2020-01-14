@@ -52,15 +52,13 @@ class Scheduler:
 		#Do not change this line
 		timetableObj = timetable.Timetable(1)
 		
-		module_tutor_pairs = self.task_1_generate_module_tutor_pairs(
-			timetableObj, self.moduleList, self.tutorList
-		)
+		module_tutor_pairs = self.task_1_generate_module_tutor_pairs(timetableObj)
 		self.task_1_can_solve_slot(timetableObj, module_tutor_pairs, 1)
 
 		#Do not change this line
 		return timetableObj
 
-	def task_1_generate_module_tutor_pairs(self, time_table, modules, tutors):
+	def task_1_generate_module_tutor_pairs(self, time_table):
 		"""
 		Generate a valid list of module-tutor pairs. For a pair to be valid, the 
 		topics of a module must all be in a tutors expertise. This is the as doing it
@@ -68,8 +66,8 @@ class Scheduler:
 		start the backtracking.
 		"""
 		pairs = []
-		for module in modules:
-			for tutor in tutors:
+		for module in self.moduleList:
+			for tutor in self.tutorList:
 				if time_table.canTeach(tutor, module, False):
 					pairs.append([module, tutor])
 
@@ -193,16 +191,14 @@ class Scheduler:
 		#Do not change this line
 		timetableObj = timetable.Timetable(2)
 
-		module_tutor_pairs = self.task_2_generate_module_tutor_pairs(
-			timetableObj, self.moduleList, self.tutorList
-		)
+		module_tutor_pairs = self.task_2_generate_module_tutor_pairs(timetableObj)
 		self.task_2_generate_time_table_slot()
 		self.task_2_can_solve_slot(timetableObj, module_tutor_pairs, 1)
 
 		#Do not change this line
 		return timetableObj
 
-	def task_2_generate_module_tutor_pairs(self, time_table, modules, tutors):
+	def task_2_generate_module_tutor_pairs(self, time_table):
 		"""
 		Generate a valid list of module-tutor pairs. For a pair to be valid, the 
 		topics of a module must all be in a tutors expertise. This is the as doing it
@@ -210,8 +206,8 @@ class Scheduler:
 		start the backtracking.
 		"""
 		pairs = []
-		for module in modules:
-			for tutor in tutors:
+		for module in self.moduleList:
+			for tutor in self.tutorList:
 				if time_table.canTeach(tutor, module, False):
 					pairs.append(self.ModuleTutorPair(module, tutor, False))
 				if time_table.canTeach(tutor, module, True):
@@ -398,14 +394,65 @@ class Scheduler:
 		#Do not change this line
 		timetableObj = timetable.Timetable(3)
 
-		#Here is where you schedule your timetable
-
-		#This line generates a random timetable, that may not be valid. You can use this or delete it.
-		self.randomModAndLabSchedule(timetableObj)
+		module_tutor_pairs = self.task_2_generate_module_tutor_pairs(timetableObj)
+		self.task_2_generate_time_table_slot()
+		self.task_2_can_solve_slot(timetableObj, module_tutor_pairs, 1)
+		timetableObj = self.simulated_annealing(timetableObj)
 
 		#Do not change this line
 		return timetableObj
 
+	def simulated_annealing(self, time_table, iterations=100000):
+		"""
+		This method will do simulated_annealing to try find a better, or hopefully
+		optimal solution. It will randomly swap two slots.
+		"""
+		def sigmoid(gamma):
+			if gamma < 0:
+				return 1 - 1 / (1 + math.exp(gamma))
+			return 1 / (1 + math.exp(-gamma))
+
+		days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+		initial = timetable.Timetable(3)
+		for day_slots in time_table.schedule.items():
+			for slot, value in day_slots[1].items():
+				initial.schedule[day_slots[0]][slot] = time_table.schedule[day_slots[0]][slot]
+
+		best_time_table = timetable.Timetable(3)
+		time_table.scheduleChecker(self.tutorList, self.moduleList)
+		lowest_cost = time_table.cost
+
+		for k in range(1, iterations):
+			T = iterations / k + 1
+
+			if T == 0:
+				break
+
+			# randomly swap two slots
+			day1 = days[random.randint(0, 4)]
+			day2 = days[random.randint(0, 4)]
+			slot1 = random.randint(1, 10)
+			slot2 = random.randint(1, 10)
+			module1 = time_table.getSession(day1, slot1)
+			module2 = time_table.getSession(day2, slot2)
+			time_table.addSession(day1, slot1, module2[0], module2[1], module2[2])
+			time_table.addSession(day2, slot2, module1[0], module1[1], module1[2])
+
+			if time_table.scheduleChecker(self.tutorList, self.moduleList):
+				if time_table.cost < lowest_cost:
+					lowest_cost = time_table.cost
+					for day_slots in time_table.schedule.items():
+						for slot, value in day_slots[1].items():
+							best_time_table.schedule[day_slots[0]][slot] = time_table.schedule[day_slots[0]][slot]
+				elif sigmoid((time_table.cost - lowest_cost) / T) < random.random():
+					time_table.addSession(day1, slot1, module1[0], module1[1], module1[2])
+					time_table.addSession(day2, slot2, module2[0], module2[1], module2[2])
+
+		if best_time_table.scheduleChecker(self.tutorList, self.moduleList):
+			return best_time_table
+		initial.scheduleChecker(self.tutorList, self.moduleList)
+		return initial
 
 	#This simplistic approach merely assigns each module to a random tutor, iterating through the timetable. 
 	def randomModSchedule(self, timetableObj):
