@@ -28,7 +28,7 @@ TIME_TABLE_SLOTS = {}
 
 def solve_timetable():
     rw = ReaderWriter.ReaderWriter()
-    tutors, modules = rw.readRequirements("ExampleProblems2/Problem1.txt")
+    tutors, modules = rw.readRequirements("ExampleProblems/Problem1.txt")
     time_table = timetable.Timetable(2)
     generate_time_table_slot()
     module_tutor_pairs = generate_module_tutor_pairs(time_table, modules, tutors)
@@ -223,4 +223,4 @@ def print_timetable(time_table, tutors, modules):
     print('----------------------------')
     print('Table valid status: ' + str(time_table.scheduleChecker(tutors, modules)))
 
-# solve_timetable()
+solve_timetable()

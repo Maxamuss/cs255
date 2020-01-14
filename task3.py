@@ -249,7 +249,7 @@ def simulated_annealing(time_table, tutors, modules):
             if time_table.cost < lowest_cost:
                 lowest_cost = time_table.cost
                 best_time_table = time_table
-            elif math.exp((time_table.cost - lowest_cost) / T) < random.random():
+            elif math.exp(math.round((time_table.cost - lowest_cost) / T, 10000)) < random.random():
                 time_table.addSession(day1, slot1, module1[0], module1[1], module1[2])
                 time_table.addSession(day2, slot2, module2[0], module2[1], module2[2])
 
