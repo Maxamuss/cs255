@@ -16,50 +16,73 @@
 \author{\IEEEauthorblockN{Max Wilkinson}
 \IEEEauthorblockA{\textit{University of Warwick} \\
 \textit{Data Science}\\
-1801383 \\
+u1801383 \\
 Max.Wilkinson@warwick.ac.uk}
 }
 
 \maketitle
 
-\section{Introduction}
 This document is the report for my Artificial Intelligence coursework. It will detail my approaches to the problems faced as well justify and evaluate them.
 
 \section{Task 1: Basic Scheduling}
 All of the tasks are constraint satisfaction problems. The CSP for this task is defined as the triple \(<X, D, C>\) where 
-\begin{equation}
+\begin{equation*}
 X = \{1, 2,..., 25\},
-\end{equation}
-\begin{equation}
+\end{equation*}
+\begin{equation*}
 D = \{(m_{i}, t_{j}): m_{i}\in M, t_{j}\in T\},
-\end{equation}
+\end{equation*}
 where M is the set of Modules and T is the set of tutors, and
-\begin{equation}
-C_{1} = \{m*\subseteq t*\}
-\end{equation}
+\begin{equation*}
+C_{1} = \{m_{i}*\subseteq t_{j}*\},
+\end{equation*}
+\begin{equation*}
+C_{2} = MAX(t_{j}) = \textrm{1 per day},
+\end{equation*}
+\begin{equation*}
+C_{3} = MAX(t_{j}) = \textrm{2 per week}
+\end{equation*}
+where \(m*\) is the the topics of a module and \(t*\) is the expertise of a tutor.
 
-For this task, I used backtracking. This proved to be a great method of tackling the problem due to its speed. I was solve all examples, plus more in a few milliseconds. A quick run through of my algorithm is as follows. Once, the module and tutor lists are retrieved, they are combined to make valid (tutor, module) pairs. These pairs are then sorted by descending order of their constraining values. The backtracking now starts. I call the first iteration of the recursive "can\_solve\_slot" function. What this function does is first check that the slot is not equal to 26 indicating a solution has been found. Next it iterates through the previously generated list of pairs (tutor, module). On each iteration, it checks that the pair can be placed into the slot based upon the constraints. If any of the constraints are not met, the pair is skipped, moving onto the next pair in the list. If the pair is valid then it is added to the slot of the timetable. I employ forward checking to reduce the domain for the variable before the recursive call is made. This will return True or False depending if, down the tree, there is a valid pair that can assigned to the timetable. The timetable object is then returned.
-
+For this task, I used backtracking. This proved to be a great method of tackling the problem due to its speed. I was able to solve all examples, plus more in a few milliseconds. A quick run through of my algorithm is as follows. Once, the module and tutor lists are retrieved, they are combined to make valid (tutor, module) pairs. These pairs are then sorted by descending order of their constraining values. The backtracking now starts. I call the first iteration of the recursive "can\_solve\_slot" function. What this function does is first check that the slot is not equal to 26, which would indicate a solution has been found, and return True. Next, it iterates through the previously generated list of pairs (tutor, module). On each iteration, it checks if the pair can be placed into the slot based upon the constraints. If any of the constraints are not met, the pair is skipped and thus pruning that that branch, moving onto the next pair in the list. If the pair is valid then it is added to the slot of the timetable. I employ forward checking to reduce the domain for the next variable before the recursive call is made. This will return True or False depending if, down the tree, there is a valid pair that can assigned to the timetable. The timetable object is mutated in place. I then return its object once the recursive algorithm has finished.
 
 As mentioned above, I used several search heuristics to increase the efficiency of the algorithm. I will explain my reasoning of these below: 
 \begin{itemize}
 \item First of all, after getting the lists of modules and tutors, I computed all of the valid pairs; the topics of the module must be a subset of the tutor's expertise. I decided to generate the pairs rather than doing it on the fly so the domain is much smaller going into the backtracking.
-\item Least Constraining Value: I then sorted the pairs (domain) in descending order of their constraining values, that is, sorting them by the pair that rules out the fewest values in the remaining variables. One of the most important parts of the algorithm is the sorting of the pairs due to the speed gain. I found that an efficient way of sorting these pairs as mentioned above was to sort the modules in order of how common the module is in the domain, least common first. This is the same thing as sorting in descending order of constraining values. This made the algorithm much faster as it had to do less backtracking due to more open values being chosen.
-\item Minimum Remaining Value: this was the approach that I took to choosing the next variable. The way that I went about this was by starting on Monday, slot 1 (an arbitrary choice, could have selected any slot) and then going to Monday slot 2, ... , slot 5. I would then move to the next day slot 1, so in this case Tuesday, slot 1. This would continue until I reached Friday slot 5. The reason that I choose to do it this way was because after choosing the first variable, the next slot fewest legal values is in the same day due to the constraint of the tutor being only able to teach a maximum of one module a day. Hence for the third choice of variable, I would select a slot in the same day again for the same reasoning. This would continue until slot 5 has been chosen, upon which we move to another day (could be any). The same reasoning of staying in the day until it is full follows for the rest of choosing of variables.
-\item Forward Checking: I did this by removing all other pairs in the domain with the same module as the pair just selected. This massively reduced the domain size for the next variable and thus reduced the run time. 
-
+\item Least Constraining Value: I then sorted the pairs (domain) in ascending order of their constraining values, that is, sorting them by the pair that rules out the fewest values for the remaining variables if it were to be selected for the timetable. This was an important part that drastically sped up the algorithm. This is because, by sorting the domain in this way meant that an appropriate value (pair) was chosen for each variable that had the best chance of not resulting in backtracking. I found that an efficient way of sorting these pairs as mentioned above was to sort the modules in order of how common the module is in the domain, least common first. This is the same thing as sorting in ascending order of constraining values due to my forward checking heuristic. This made the algorithm much faster as it had to do less backtracking due to more open values being chosen.
+\item Minimum Remaining Value: this was the approach that I took to choosing the next variable. The way that I went about this was by starting on Monday, slot 1 (an arbitrary choice, could have selected any slot) and then going to Monday slot 2, ... , slot 5. I would then move to the next day, slot 1, so in this case Tuesday, slot 1. This would continue until I reached Friday slot 5, where the algorithm would terminate. The reason that I choose to choose the variables in this order is because after choosing a variable, I want to the select the next variable with the fewest legal values. Hence, by choosing the next slot as a one on the same day (if possible) meant this was true due to the constraint of a tutor only being able to teach a maximum of one module per day. I found that this was much more effective than an approach randomly choosing variables.
+\item Forward Checking: this is a method to prevent future conflicts by performing a restricted form of arc consistency to the not yet instantiated variables. I implemented this by removing all other pairs in the domain with the same module as the pair just added to the timetable. This makes sense to do since once a module has been selected, it cannot be selected again. This massively reduced the domain size for the next variable and thus reduced the run time of the algorithm. 
 \end{itemize}
+My solution to task 1 does the job in a fast and efficient manor due to the employment of several search heuristics as well of the careful select of data structures.
 
 \section{Task 2: Introducing Lab Sessions}
-The next task saw to the addition of lab sessions for each module as well as a new constraint system for tutors based upon credits. I went about solving this task with a similar method to task 1 but with a few key difference. 
+The next task saw to the addition of lab sessions for each module as well as a new constraint system for tutors based upon credits. I went about solving this task with a similar algorithm to task 1 but with a few key difference. The CSP is now defined as the triple \(<X, D, C>\) where 
+\begin{equation*}
+X = \{1, 2,..., 50\},
+\end{equation*}
+\begin{equation*}
+D = \{(m_{i}, t_{j}): m_{i}\in M, t_{j}\in T \},
+\end{equation*}
+where M is the set of Modules and T is the set of tutors, and
+\begin{equation*}
+C_{1} = \{m_{i}*\subseteq t_{j}* \cup t_{j}*\in m_{i}*\},
+\end{equation*}
+\begin{equation*}
+C_{2} = MAX_{credits}(t_{j}) = \textrm{2 per day},
+\end{equation*}
+\begin{equation*}
+C_{3} = MAX_{credits}(t_{j}) = \textrm{4 per week}
+\end{equation*}
+where \(m*\) is the the topics of a module and \(t*\) is the expertise of a tutor and a module is 2 credits, a lab 1.
+
+The domain size of the problem was now much bigger and as such I had to really use search heuristics to their full potential to make the algorithm as efficient and fast as it could be. The changes I made for this task are as follows:
 \begin{itemize}
-\item I now generated a list of (tutor, module, is\_lab) pairs from the lists of modules and tutors, checking if a tutor could also teach a lab for the module, adding that pair to the list with the Boolean is\_lab indicating what kind of pair it was: module or lab. This meant that the domain size was much bigger than task 1 and meant I had to work hard to get all of the efficiency gain that I could out of my algorithm.
-\item Due to this increases domain size, the sorting of it became very important. Like last time, I sorted the list in order of least common modules. The difference this time is that if there is a tie break, the pairs are sorted by lowest frequency of tutors and then with labs first. This was to make sure that the least constraining values were the one first selected by each variable in the backtracking. 
+\item I now generated a list of (tutor, module, is\_lab) pairs from the lists of modules and tutors, checking if a tutor could also teach a lab for the module, adding that pair to the list with the Boolean is\_lab indicating what kind of pair it was: module or lab. This meant that the domain size was much bigger than task 1 and meant I had to work hard to get all of the efficiency gain that I could out of my algorithm. I now made my own data structure for the storing of these pairs in the list. This lead to memory improvements as well as cleaner code.
+\item Least Constraining Value: Due to the increased domain size, the sorting of it became very important. Like last time, I sorted the list in order of least common modules. The difference this time is that if there is a tie break, the pairs are sorted by lowest frequency of tutors and then with labs first. This was to make sure that the elements with the smallest constraining values were the one first selected by each variable in the backtracking. A poorly chosen element in the domain could lead to exponential wasted run time due to exploring and then backtracking branches. 
 \item Minimum Remaining Value: this follows the same reasoning as task 1 except now there are 10 slots each day and as such, the variable is not changed to another day until it reaches slot 10 of any given day.
-\item  
+\item Forward Checking: Like in task 1, I remove all elements from the domain with the same module but this time only remove if they have the same is\_lab Boolean value as the pair just added to the timetable. This is because now it not true that a elements with the same module can be removed from the domain as the one just added to the timetable due to the fact that there are both a module and lab session for each module. Hence, I also remove any elements with teachers that have used up all of their weekly credits (4). This helps reduce the domain size for future variables and improve the run time of the algorithm dramatically.
 
 
 \end{itemize}
 
 \end{document}
-
